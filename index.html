@@ -19,8 +19,9 @@ input,select,textarea{width:100%;padding:13px;border:1px solid #ccd8e5;border-ra
 .road{display:flex;justify-content:space-between;gap:12px;align-items:center}.road strong{color:var(--navy)}.road small{display:block;color:var(--muted);margin-top:4px}
 .progress{height:8px;background:#e6edf5;border-radius:99px;overflow:hidden;margin-top:10px}.progress i{display:block;height:100%;background:var(--aqua)}
 .housegrid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.house{padding:14px 5px;border:2px solid var(--line);border-radius:13px;background:#fff;font-weight:900;color:var(--navy)}
-.house[data-s="noanswer"]{background:#eaf4ff;border-color:#82bfff}.house[data-s="notinterested"]{background:#f4f4f4;color:#666}.house[data-s="callback"]{background:#fff3d0;border-color:#ffd21c}.house[data-s="donotknock"]{background:#ffe9e7;border-color:#e37a72;color:#8f1e16}.house[data-s="interested"]{background:#e5fbf2;border-color:#62c99a}.house[data-s="booked"]{background:#dff7e8;border-color:#16834b;color:#12643d}
-.statusgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.status{padding:15px 8px;border:0;border-radius:12px;font-weight:900}.status:last-child{grid-column:1/-1}.s-noanswer{background:#dbeeff}.s-notinterested{background:#ececec}.s-callback{background:#ffe89b}.s-donotknock{background:#ffd8d4;color:#8f1e16}.s-interested{background:#d9f7e8;color:#12643d}.s-booked{background:#16834b;color:white}
+.house[data-s="noanswer"]{background:#cfe8ff;border-color:#005bbb;color:#001f54}.house[data-s="notinterested"]{background:#e1e1e1;border-color:#333;color:#111}.house[data-s="callback"]{background:#ffe066;border-color:#7a5200;color:#2d2100}.house[data-s="donotknock"]{background:#ffb3b3;border-color:#9b0000;color:#650000}.house[data-s="interested"]{background:#d8c7ff;border-color:#5b2aa8;color:#32105f}.house[data-s="booked"]{background:#9ee6c2;border-color:#006b3c;color:#003d22}
+.house .mark{display:block;font-size:18px;line-height:1;margin-top:5px}.house .num{display:block}
+.statusgrid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.status{padding:15px 8px;border:2px solid transparent;border-radius:12px;font-weight:900}.status:last-child{grid-column:1/-1}.s-noanswer{background:#cfe8ff;border-color:#005bbb;color:#001f54}.s-notinterested{background:#e1e1e1;border-color:#333;color:#111}.s-callback{background:#ffe066;border-color:#7a5200;color:#2d2100}.s-donotknock{background:#ffb3b3;border-color:#9b0000;color:#650000}.s-interested{background:#d8c7ff;border-color:#5b2aa8;color:#32105f}.s-booked{background:#087443;border-color:#004d2c;color:white}
 .pill{display:inline-block;border-radius:99px;background:var(--soft);padding:6px 10px;font-size:12px;font-weight:800;margin:3px}
 .quotePrice{font-size:52px;font-weight:900;color:var(--navy);text-align:center;margin:16px}.hidden{display:none!important}
 .statgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.stat{background:var(--soft);padding:16px;border-radius:15px;text-align:center}.stat b{display:block;font-size:28px;color:var(--navy)}
@@ -35,13 +36,15 @@ nav button{border:0;background:#fff;color:#65738a;font-size:11px;font-weight:800
 <main>
 <section id="canvass" class="screen active">
   <div class="card"><h2>Canvass</h2><p class="sub">Add a road, then work through the doors.</p>
-    <div class="row"><div class="grow"><input id="roadName" placeholder="Road name, e.g. Oakfield Road"></div><div class="grow"><input id="roadArea" placeholder="Postcode or area, e.g. KT11 1JL"></div></div>
-<button class="btn primary" style="width:100%;margin-top:10px" onclick="lookupRoad()">🔎 FIND PROPERTIES AUTOMATICALLY</button>
-<div id="lookupStatus" class="sub" style="margin-top:10px"></div><div id="lookupResults"></div>
-<div style="margin:18px 0;border-top:1px solid #ddd"></div>
-<div class="sub"><b>Manual fallback</b> — enter the highest house number if the free lookup misses the road.</div>
-<div class="row" style="margin-top:8px"><div class="grow"><input id="roadCount" type="number" min="1" placeholder="Highest house number"></div><button class="btn secondary" onclick="addRoad()">ADD MANUALLY</button></div>
-    <p style="font-size:12px;color:var(--muted)">For this first working version, enter the number of properties manually. Automatic UK road/property lookup is the next integration.</p>
+    <input id="roadName" placeholder="Road name, e.g. Oakfield Road">
+    <label>Highest house number</label>
+    <input id="roadCount" type="number" min="1" placeholder="e.g. 60">
+    <label>Extra numbers or house names <span style="font-weight:400;color:var(--muted)">(optional)</span></label>
+    <input id="roadExtras" placeholder="e.g. 1A, 2B, The Cottage">
+    <button class="btn ghost" style="width:100%;margin-top:12px" onclick="previewManualRoad()">👀 PREVIEW PROPERTY LIST</button>
+    <div id="manualRoadPreview"></div>
+    <button class="btn primary" style="width:100%;margin-top:10px" onclick="addRoad()">ADD ROAD</button>
+    <p style="font-size:12px;color:var(--muted)">Walk the road, enter the highest number, then add any lettered numbers or named houses if needed.</p>
   </div>
   <div id="roads"></div><div id="roadView"></div>
 </section>
@@ -89,12 +92,12 @@ nav button{border:0;background:#fff;color:#65738a;font-size:11px;font-weight:800
 <div id="modal" class="hidden" style="position:fixed;inset:0;background:#061044aa;z-index:50;padding:20px;overflow:auto"><div class="card" style="max-width:520px;margin:8vh auto">
 <div class="row" style="justify-content:space-between;align-items:center"><h2 id="mTitle">Property</h2><button class="btn ghost" onclick="closeModal()">✕</button></div>
 <div class="statusgrid">
-<button class="status s-noanswer" onclick="setStatus('noanswer')">NO ANSWER</button>
-<button class="status s-notinterested" onclick="setStatus('notinterested')">NOT INTERESTED</button>
-<button class="status s-callback" onclick="callbackPrompt()">COME BACK</button>
-<button class="status s-donotknock" onclick="setStatus('donotknock')">DO NOT KNOCK</button>
-<button class="status s-interested" onclick="setStatus('interested',true)">INTERESTED / QUOTE</button>
-<button class="status s-booked" onclick="setStatus('booked')">BOOKED ✓</button>
+<button class="status s-noanswer" onclick="setStatus('noanswer')">? NO ANSWER</button>
+<button class="status s-notinterested" onclick="setStatus('notinterested')">✕ NOT INTERESTED</button>
+<button class="status s-callback" onclick="callbackPrompt()">☎ COME BACK</button>
+<button class="status s-donotknock" onclick="setStatus('donotknock')">⛔ DO NOT KNOCK</button>
+<button class="status s-interested" onclick="setStatus('interested',true)">★ INTERESTED / QUOTE</button>
+<button class="status s-booked" onclick="setStatus('booked')">✓ BOOKED</button>
 </div><div id="callbackFields" class="hidden"><label>Come back when?</label><input id="cbWhen" type="datetime-local"><button class="btn primary" style="width:100%;margin-top:10px" onclick="saveCallback()">SAVE CALLBACK</button></div>
 <label>Quick note</label><textarea id="doorNote" placeholder="Optional note"></textarea><div id="history"></div>
 </div></div>
@@ -174,118 +177,66 @@ async function startCloud(user){
 function stopCloud(){cloudUser=null;cloudRef=null;cloudReady=false;if(cloudUnsub){cloudUnsub();cloudUnsub=null}document.getElementById("syncSignedOut")?.classList.remove("hidden");document.getElementById("syncSignedIn")?.classList.add("hidden");setSyncUI("local","Not signed in — data is stored on this device only.")}
 if(fbAuth)fbAuth.onAuthStateChanged(user=>user?startCloud(user):stopCloud());
 function stamp(){return new Date().toLocaleString("en-GB")}
-async function fetchWithTimeout(url,ms=7000){
- const controller=new AbortController();
- const timer=setTimeout(()=>controller.abort(),ms);
- try{return await fetch(url,{signal:controller.signal})}
- finally{clearTimeout(timer)}
+function roadTokens(value){
+ return String(value||"").split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);
 }
-function showRangeResult(road,highest,place=""){
- window.rnsLookupRoad=road;window.rnsLookupHighest=highest;
- lookupStatus.innerHTML=(place?`Road found: <b>${esc(place)}</b><br>`:"")+`Likely address range: <b>1–${highest}</b>.`;
- lookupResults.innerHTML=`<div class=history style="margin-top:10px"><b>${esc(road)}</b><br>${highest} likely numbered addresses generated for canvassing.<br><small>You can add/remove oddities such as 12A, flats or non-existent numbers afterwards.</small></div>
- <button class="btn primary" style="width:100%;margin-top:8px" onclick="addEstimatedRoad()">USE 1–${highest}</button>
- <div class="row" style="margin-top:8px"><div class="grow"><input id="adjustHighest" type="number" min="1" value="${highest}"></div><button class="btn secondary" onclick="useAdjustedHighest()">ADJUST</button></div>`;
+function naturalHouseSort(a,b){
+ return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:"base"});
 }
-async function lookupRoad(){
- let road=roadName.value.trim(),area=roadArea.value.trim();
- if(!road||!area)return alert("Enter the road name and a postcode or area.");
- lookupResults.innerHTML="";
-
- // Verified benchmark — instant on every device, including iPad/Safari.
- if(road.toLowerCase().replace(/\s+/g," ").trim()==="northfield road" && /^kt11\b/i.test(area.trim())){
-   lookupStatus.textContent="Northfield Road recognised ✓";
-   showRangeResult(road,60,"Northfield Road, Cobham");
+function buildManualRoadList(){
+ let highest=+roadCount.value, houses=[];
+ if(highest>0) for(let i=1;i<=highest;i++) houses.push(String(i));
+ houses.push(...roadTokens(roadExtras.value));
+ return [...new Set(houses.map(x=>String(x).trim()).filter(Boolean))].sort(naturalHouseSort);
+}
+function previewManualRoad(){
+ let houses=buildManualRoadList();
+ if(!houses.length){
+   manualRoadPreview.innerHTML='<div class="history" style="margin-top:10px">Enter the highest house number or add a property first.</div>';
    return;
  }
-
- lookupStatus.textContent="Checking the road…";
-
- // Hard timeout keeps Safari/iPad from hanging indefinitely.
- const timedFetch=(url,ms=9000)=>Promise.race([
-   fetch(url,{cache:"no-store"}),
-   new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),ms))
- ]);
-
- try{
-   let found=null;
-   for(const query of [road+", "+area+", UK",road+", "+area]){
-     try{
-       let res=await timedFetch("https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=gb&q="+encodeURIComponent(query),7000);
-       if(!res.ok)continue;
-       let arr=await Promise.race([res.json(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),3500))]);
-       found=arr.find(x=>(x.display_name||"").toLowerCase().includes(road.toLowerCase()))||arr[0];
-       if(found)break;
-     }catch(e){}
-   }
-
-   if(!found){
-     lookupStatus.innerHTML="<b>Automatic lookup didn't respond on this device.</b> No problem — use the manual highest-number option below.";
-     return;
-   }
-
-   lookupStatus.textContent="Road found — checking mapped house numbers…";
-   let lat=found.lat,lon=found.lon,safe=road.replace(/\\/g,"\\\\").replace(/"/g,'\\"'),nums=[];
-   let q=`[out:json][timeout:8];(nwr(around:2500,${lat},${lon})["addr:street"="${safe}"]["addr:housenumber"];);out tags;`;
-
-   // Free Overpass servers can be busy. Try several, stopping as soon as one
-   // gives us usable house numbers. Firebase/sync is completely separate.
-   const overpassServers=[
-     "https://overpass.kumi.systems/api/interpreter",
-     "https://overpass-api.de/api/interpreter",
-     "https://overpass.nchc.org.tw/api/interpreter"
-   ];
-   for(let i=0;i<overpassServers.length&&!nums.length;i++){
-     lookupStatus.textContent=`Road found — checking mapped house numbers${i?" (retry "+(i+1)+")":"…"}`;
-     try{
-       let r=await timedFetch(overpassServers[i]+"?data="+encodeURIComponent(q),9500);
-       if(!r.ok)continue;
-       let j=await Promise.race([r.json(),new Promise((_,reject)=>setTimeout(()=>reject(new Error("timeout")),4000))]);
-       nums=[...new Set((j.elements||[]).map(x=>x.tags?.["addr:housenumber"]).filter(Boolean))];
-     }catch(e){}
-   }
-
-   let numeric=nums.map(n=>parseInt(String(n).match(/^\d+/)?.[0]||"",10)).filter(Number.isFinite);
-   let highest=numeric.length?Math.max(...numeric):0;
-   let place=(found.display_name||"").split(",").slice(0,3).join(",");
-
-   if(highest)showRangeResult(road,highest,place);
-   else{
-     lookupStatus.innerHTML=`Road found: <b>${esc(place)}</b>, but the free map data didn't return usable house numbers.`;
-     lookupResults.innerHTML=`<div class=history style="margin-top:10px">Use the manual highest-number box below. The app tried multiple free lookup servers first 👍</div>`;
-   }
- }catch(e){
-   lookupStatus.innerHTML="<b>Automatic lookup timed out.</b> Use the manual fallback below.";
- }
+ manualRoadPreview.innerHTML=`<div class="history" style="margin-top:10px"><b>${houses.length} properties</b><br><span style="line-height:2">${houses.map(x=>`<span class="pill">${esc(x)}</span>`).join("")}</span></div>`;
 }
-function useAdjustedHighest(){
- let v=+document.getElementById("adjustHighest")?.value;
- if(!v||v<1)return alert("Enter a valid highest house number.");
- window.rnsLookupHighest=v;addEstimatedRoad();
+function clearManualRoadForm(){
+ roadName.value="";roadCount.value="";roadExtras.value="";manualRoadPreview.innerHTML="";
 }
-function addEstimatedRoad(){
- let n=window.rnsLookupRoad||roadName.value.trim(),c=+window.rnsLookupHighest;
- if(!n||!c)return;
- data.roads.push({id:Date.now(),name:n,houses:Array.from({length:c},(_,i)=>({number:String(i+1),status:"",history:[]}))});
- roadName.value="";roadArea.value="";lookupStatus.textContent="";lookupResults.innerHTML="";
- window.rnsLookupHighest=0;window.rnsLookupRoad="";save();
+function addRoad(){
+ let n=roadName.value.trim(),houses=buildManualRoadList();
+ if(!n)return alert("Enter a road name.");
+ if(!houses.length)return alert("Enter the highest house number or add a property.");
+ data.roads.push({id:Date.now(),name:n,houses:houses.map(number=>({number,status:"",history:[]}))});
+ clearManualRoadForm();save();
 }
-function addRoad(){let n=roadName.value.trim(),c=+roadCount.value;if(!n||!c)return alert("Enter a road name and highest house number.");data.roads.push({id:Date.now(),name:n,houses:Array.from({length:c},(_,i)=>({number:String(i+1),status:"",history:[]}))});roadName.value="";roadCount.value="";save()}
+let pendingDeleteRoad=null;
 function deleteRoad(id){
- let r=data.roads.find(x=>x.id===id);if(!r)return;
- if(!confirm(`Delete ${r.name} and all its house-by-house canvassing history?\n\nSaved quotes and booked customers will NOT be deleted.`))return;
+ if(pendingDeleteRoad!==id){pendingDeleteRoad=id;renderRoads();return;}
  data.roads=data.roads.filter(x=>x.id!==id);
+ pendingDeleteRoad=null;
+ if(activeRoad===id){activeRoad=null;roadView.innerHTML="";}
  save();
 }
 function renderRoads(){
  roads.innerHTML=data.roads.length?"":"<div class=empty>No roads added yet.</div>";
  data.roads.forEach(r=>{
   let done=r.houses.filter(h=>h.status).length,p=Math.round(done/r.houses.length*100);
-  roads.innerHTML+=`<div class="card road" onclick="openRoad(${r.id})"><div class=grow><strong>${esc(r.name)}</strong><small>${done} / ${r.houses.length} properties visited</small><div class=progress><i style="width:${p}%"></i></div></div><button class="btn ghost">OPEN</button><button class="btn danger" onclick="event.stopPropagation();deleteRoad(${r.id})">DELETE</button></div>`
+  roads.innerHTML+=`<div class="card road" onclick="openRoad(${r.id})"><div class=grow><strong>${esc(r.name)}</strong><small>${done} / ${r.houses.length} properties visited</small><div class=progress><i style="width:${p}%"></i></div></div><button class="btn ghost">OPEN</button><button class="btn danger" onclick="event.stopPropagation();deleteRoad(${r.id})">${pendingDeleteRoad===r.id?"CONFIRM DELETE":"DELETE"}</button></div>`
  })
 }
-function openRoad(id){activeRoad=id;let r=data.roads.find(x=>x.id===id);roadView.innerHTML=`<div class=card><div class=row style="justify-content:space-between"><div><h2>${esc(r.name)}</h2><p class=sub>Tap a property after you knock.</p></div><button class="btn ghost" onclick="activeRoad=null;roadView.innerHTML=''">CLOSE</button></div><div class=housegrid>${r.houses.map((h,i)=>`<button class=house data-s="${h.status}" onclick="openHouse(${i})">${esc(h.number)}</button>`).join("")}</div><div class=row style="margin-top:14px"><button class="btn ghost" onclick="addHouse()">+ ADD PROPERTY</button></div></div>`;roadView.scrollIntoView({behavior:"smooth"})}
-function addHouse(){let r=data.roads.find(x=>x.id===activeRoad),n=prompt("House number or name");if(!n)return;r.houses.push({number:n,status:"",history:[]});save();openRoad(activeRoad)}
+function statusSymbol(s){return ({noanswer:"?",notinterested:"✕",callback:"☎",donotknock:"⛔",interested:"★",booked:"✓"})[s]||""}
+function openRoad(id){activeRoad=id;let r=data.roads.find(x=>x.id===id);roadView.innerHTML=`<div class=card><div class=row style="justify-content:space-between"><div><h2>${esc(r.name)}</h2><p class=sub>Tap a property after you knock.</p></div><button class="btn ghost" onclick="activeRoad=null;roadView.innerHTML=''">CLOSE</button></div><div class=housegrid>${r.houses.map((h,i)=>`<button class=house data-s="${h.status}" onclick="openHouse(${i})"><span class="num">${esc(h.number)}</span>${h.status?`<span class="mark">${statusSymbol(h.status)}</span>`:""}</button>`).join("")}</div><div class=row style="margin-top:14px"><button class="btn ghost" onclick="showAddHouse()">+ ADD PROPERTY</button></div><div id="addHouseBox" class="hidden" style="margin-top:10px"><div class="row"><div class="grow"><input id="newHouseName" placeholder="Number or name, e.g. 12A or Rose Cottage"></div><button class="btn primary" onclick="addHouse()">ADD</button><button class="btn ghost" onclick="hideAddHouse()">CANCEL</button></div></div></div>`;roadView.scrollIntoView({behavior:"smooth"})}
+function showAddHouse(){
+ addHouseBox.classList.remove("hidden");
+ newHouseName.focus();
+}
+function hideAddHouse(){addHouseBox.classList.add("hidden");newHouseName.value="";}
+function addHouse(){
+ let r=data.roads.find(x=>x.id===activeRoad);if(!r)return;
+ let n=newHouseName.value.trim();if(!n)return;
+ if(r.houses.some(h=>String(h.number).trim().toLowerCase()===n.toLowerCase()))return alert("That property is already on this road.");
+ r.houses.push({number:n,status:"",history:[]});
+ r.houses.sort((a,b)=>String(a.number).localeCompare(String(b.number),undefined,{numeric:true,sensitivity:"base"}));
+ save();openRoad(activeRoad);
+}
 function openHouse(i){activeHouse=i;let r=data.roads.find(x=>x.id===activeRoad),h=r.houses[i];mTitle.textContent=h.number+" "+r.name;doorNote.value="";callbackFields.classList.add("hidden");history.innerHTML=h.history.slice().reverse().map(x=>`<div class=history><b>${esc(x.label)}</b> — ${esc(x.when)}${x.note?"<br>"+esc(x.note):""}</div>`).join("");modal.classList.remove("hidden")}
 function closeModal(){modal.classList.add("hidden")}
 const labels={noanswer:"No answer",notinterested:"Not interested",callback:"Come back",donotknock:"Do not knock",interested:"Interested / Quote",booked:"Booked"};
