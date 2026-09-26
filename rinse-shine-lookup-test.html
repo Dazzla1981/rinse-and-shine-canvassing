@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rinse & Shine — Lookup Test</title>
+<style>
+:root{--navy:#00126B;--yellow:#ffd21c;--muted:#61708c}
+*{box-sizing:border-box} body{margin:0;font-family:Arial,sans-serif;background:#f5f8fc;color:#07175e}
+main{max-width:760px;margin:50px auto;padding:20px}
+.card{background:white;border:1px solid #d9e1ee;border-radius:22px;padding:24px;box-shadow:0 10px 30px #00126b12}
+h1{margin-top:0} p{color:var(--muted)}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row input{flex:1;min-width:220px}
+input{padding:15px;border:1px solid #c9d4e5;border-radius:12px;font-size:16px}
+button{width:100%;margin-top:12px;padding:15px;border:0;border-radius:12px;background:var(--yellow);color:var(--navy);font-weight:900;font-size:16px;cursor:pointer}
+#status{margin-top:18px;padding:14px;background:#f6f8fc;border-radius:12px;white-space:pre-wrap;line-height:1.5}
+.ok{color:#087b32}.bad{color:#a51d1d}
+small{display:block;margin-top:16px;color:var(--muted)}
+</style>
+</head>
+<body><main><div class="card">
+<h1>Rinse & Shine Lookup Test 🔧</h1>
+<p>Standalone test only — no Firebase, customers, quotes or app data.</p>
+<div class="row">
+<input id="road" value="Coveham Crescent" placeholder="Road name">
+<input id="area" value="KT11" placeholder="Postcode / outcode">
+</div>
+<button id="go">TEST LOOKUP</button>
+<div id="status">Ready.</div>
+<small>This page only tests whether GitHub Pages can reach the free lookup services.</small>
+</div></main>
+<script>
+const $=id=>document.getElementById(id);
+async function getJSON(url,ms=10000){
+ const c=new AbortController(),t=setTimeout(()=>c.abort(),ms);
+ try{
+  const r=await fetch(url,{signal:c.signal,cache:"no-store"});
+  if(!r.ok)throw new Error("HTTP "+r.status);
+  return await r.json();
+ }finally{clearTimeout(t)}
+}
+$("go").onclick=async()=>{
+ const road=$("road").value.trim(), area=$("area").value.trim().toUpperCase().replace(/\s+/g," ");
+ const outcode=area.split(" ")[0];
+ $("status").className=""; $("status").textContent="1/3 Checking outcode "+outcode+"…";
+ try{
+   const pc=await getJSON("https://api.postcodes.io/outcodes/"+encodeURIComponent(outcode));
+   if(!pc || pc.status!==200 || !pc.result) throw new Error("No outcode result");
+   const {latitude,longitude}=pc.result;
+   $("status").textContent=`1/3 Outcode OK ✓ (${latitude}, ${longitude})\n2/3 Looking for ${road}…`;
+   const q=encodeURIComponent(`${road}, ${area}, UK`);
+   const nom=await getJSON("https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=5&countrycodes=gb&q="+q);
+   const found=(nom||[]).find(x=>(x.display_name||"").toLowerCase().includes(road.toLowerCase())) || (nom||[])[0];
+   if(!found) throw new Error("Road not returned by Nominatim");
+   $("status").textContent=`1/3 Outcode OK ✓\n2/3 Road OK ✓\n${found.display_name}\n3/3 Checking mapped property identifiers…`;
+   const safe=road.replace(/\\/g,"\\\\").replace(/"/g,'\\"');
+   const oq=`[out:json][timeout:10];nwr(around:2500,${found.lat},${found.lon})["addr:street"="${safe}"]["addr:housenumber"];out tags;`;
+   const ov=await getJSON("https://overpass.kumi.systems/api/interpreter?data="+encodeURIComponent(oq),12000);
+   const nums=[...new Set((ov.elements||[]).map(x=>x.tags?.["addr:housenumber"]).filter(Boolean))];
+   nums.sort((a,b)=>parseInt(a)-parseInt(b)||String(a).localeCompare(String(b),undefined,{numeric:true}));
+   if(nums.length){
+     $("status").className="ok";
+     $("status").textContent=`OUTCODE ✓\nROAD ✓\nPROPERTY IDENTIFIERS ✓\n\nReturned ${nums.length}:\n${nums.join(", ")}`;
+   }else{
+     $("status").className="bad";
+     $("status").textContent="OUTCODE ✓\nROAD ✓\n\nNo mapped house identifiers returned. This proves the HTTPS lookup chain works; the remaining issue is the address dataset.";
+   }
+ }catch(e){
+   $("status").className="bad";
+   $("status").textContent="FAILED at current step:\n"+(e?.message||e)+"\n\nSend Darren's screenshot back to ChatGPT.";
+ }
+};
+</script></body></html>
